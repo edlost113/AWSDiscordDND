@@ -1,5 +1,7 @@
 const nacl = require('tweetnacl');
-const { SNS,PublishCommand, SNSClient } = require('@aws-sdk/client-sns');
+const { PublishCommand, SNSClient } = require('@aws-sdk/client-sns');
+
+const snsClient = new SNSClient({});
 
 exports.handler = async (event) => {
   const strBody = event.body; // should be string, for successful sign
@@ -40,14 +42,13 @@ exports.handler = async (event) => {
   if (body.data.name) {
     var eventText = JSON.stringify(body, null, 2);
     // Create promise and SNS service object
-    const snsClient = new SNSClient({});
-    const response = await snsClient.send(
+    await snsClient.send(
         new PublishCommand({
           Message: eventText,
           TopicArn: process.env.TOPIC_ARN,
           MessageAttributes:{ "command": { DataType: 'String', StringValue: body.data.name } }
         }),);
-        
+
     return {
       statusCode: 200,
       body: JSON.stringify({
