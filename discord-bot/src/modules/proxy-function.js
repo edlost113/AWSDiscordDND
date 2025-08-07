@@ -1,5 +1,5 @@
 const nacl = require('tweetnacl');
-const { SNS } = require('@aws-sdk/client-sns');
+const { SNS,PublishCommand, SNSClient } = require('@aws-sdk/client-sns');
 
 exports.handler = async (event) => {
   const strBody = event.body; // should be string, for successful sign
@@ -39,19 +39,15 @@ exports.handler = async (event) => {
   // Handle command (send to SNS and split to one of Lambdas)
   if (body.data.name) {
     var eventText = JSON.stringify(body, null, 2);
-    var params = {
-        Message: eventText,
-        Subject: "Test SNS From Lambda",
-        TopicArn: process.env.TOPIC_ARN,
-        MessageAttributes: { "command": { DataType: 'String', StringValue: body.data.name } }
-    };
     // Create promise and SNS service object
-    await new SNS({
-      // The key apiVersion is no longer supported in v3, and can be removed.
-      // @deprecated The client uses the "latest" apiVersion.
-      apiVersion: '2010-03-31',
-    }).publish(params);
-    
+    const snsClient = new SNSClient({});
+    const response = await snsClient.send(
+        new PublishCommand({
+          Message: eventText,
+          TopicArn: process.env.TOPIC_ARN,
+          MessageAttributes:{ "command": { DataType: 'String', StringValue: body.data.name } }
+        }),);
+        
     return {
       statusCode: 200,
       body: JSON.stringify({
